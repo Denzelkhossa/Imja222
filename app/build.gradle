@@ -1,0 +1,109 @@
+import java.util.Properties
+
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.kapt")
+}
+
+// ---------------------------------------------------------------------------
+// Chaves "de fábrica" para uso pessoal (rotação automática do Gemini).
+// Ficam em secrets.properties, NA RAIZ do projeto — NUNCA neste ficheiro nem
+// em nenhum .kt versionado — e secrets.properties está no .gitignore.
+// Se o ficheiro não existir (ex.: quem clonar o repo sem ele), os campos
+// ficam vazios e o app funciona normalmente pedindo a chave na UI (BYOK).
+// ---------------------------------------------------------------------------
+def secretsFile = rootProject.file("secrets.properties")
+def secrets = new Properties()
+if (secretsFile.exists()) {
+    secretsFile.withInputStream { secrets.load(it) }
+}
+def secret = { String key -> secrets.getProperty(key, "") }
+
+android {
+    namespace = "com.khossastudio.agent"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.khossastudio.agent"
+        minSdk = 26
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+
+        // Até 5 chaves Gemini pré-carregadas (rotação automática já embutida
+        // no KeyRotationManager — ver config/SecretKeys.kt e README > "Rotação
+        // automática de chaves"). Continuam editáveis/removíveis na própria UI.
+        buildConfigField "String", "GEMINI_KEY_1", "\"${secret('GEMINI_KEY_1')}\""
+        buildConfigField "String", "GEMINI_KEY_2", "\"${secret('GEMINI_KEY_2')}\""
+        buildConfigField "String", "GEMINI_KEY_3", "\"${secret('GEMINI_KEY_3')}\""
+        buildConfigField "String", "GEMINI_KEY_4", "\"${secret('GEMINI_KEY_4')}\""
+        buildConfigField "String", "GEMINI_KEY_5", "\"${secret('GEMINI_KEY_5')}\""
+        buildConfigField "String", "NVIDIA_KEY_1", "\"${secret('NVIDIA_KEY_1')}\""
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    buildFeatures {
+        viewBinding = true
+        buildConfig = true
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+}
+
+dependencies {
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.activity:activity-ktx:1.9.0")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Memória local (item 4 do briefing: SQLite/Room)
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
+
+    // Frontend Compose (item 5: arquitetura) — usado no novo ecrã do assistente
+    def composeBom = platform("androidx.compose:compose-bom:2024.06.00")
+    implementation(composeBom)
+    implementation("androidx.activity:activity-compose:1.9.0")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.1")
+
+    // MediaPipe Vision (Edge AI Vision)
+    implementation("com.google.mediapipe:tasks-vision:0.10.14")
+    implementation("androidx.biometric:biometric:1.1.0")
+
+    // Vosk Voice (Edge AI Voice / Wake Word)
+    implementation("com.alphacephei:vosk-android:0.3.32")
+}

@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Khossa Agent</string>
+    <string name="accessibility_service_description">Permite que o Khossa Agent leia a tela e execute ações (cliques, digitação, rolagem) em seu nome para completar as tarefas que você pedir.</string>
+</resources>
