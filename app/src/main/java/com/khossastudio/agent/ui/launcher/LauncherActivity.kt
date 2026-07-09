@@ -1,15 +1,19 @@
 package com.khossastudio.agent.ui.launcher
 
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
-import com.khossastudio.agent.*
+import com.khossastudio.agent.ActionExecutor
+import com.khossastudio.agent.AgentAccessibilityService
+import com.khossastudio.agent.AssistantActivity
+import com.khossastudio.agent.LocalCommandProcessor
+import com.khossastudio.agent.MainActivity
 import com.khossastudio.agent.memory.MemoryManager
 import com.khossastudio.agent.skills.SkillManager
 import com.khossastudio.agent.smart.alarms.IntelligentAlarmSystem
@@ -43,76 +47,109 @@ class LauncherActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        prefs = getSharedPreferences("khossa_agent_prefs", MODE_PRIVATE)
-        skillManager = SkillManager(this)
-        memoryManager = MemoryManager()
-        voiceManager = VoiceInteractionManager(this)
-        controlCenter = SmartControlCenter()
-        alarmSystem = IntelligentAlarmSystem()
-        personalityEngine = PersonalityEngine()
-        localProcessor = LocalCommandProcessor(this)
+        Log.d("KhossaLauncher", "onCreate started")
+        
+        try {
+            prefs = getSharedPreferences("khossa_agent_prefs", MODE_PRIVATE)
+            skillManager = SkillManager(this)
+            memoryManager = MemoryManager()
+            voiceManager = VoiceInteractionManager(this)
+            controlCenter = SmartControlCenter()
+            alarmSystem = IntelligentAlarmSystem()
+            personalityEngine = PersonalityEngine()
+            localProcessor = LocalCommandProcessor(this)
 
-        // Inicializar módulos
-        coroutineScope.launch(Dispatchers.IO) {
-            try {
-                memoryManager.initialize(this@LauncherActivity)
-            } catch (e: Exception) { }
-            try {
-                controlCenter.initialize(this@LauncherActivity)
-            } catch (e: Exception) { }
-            try {
-                alarmSystem.initialize(this@LauncherActivity)
-            } catch (e: Exception) { }
-        }
+            Log.d("KhossaLauncher", "Managers initialized")
 
-        // Inicializar voz
-        try { voiceManager.init() } catch (e: Exception) { }
-        voiceManager.onLevel = { level -> uiState = uiState.copy(voiceLevel = level) }
-
-        // Carregar estado inicial
-        loadInitialState()
-
-        setContent {
-            KhossaTheme {
-                KhossaLauncherScreen(
-                    state = uiState,
-                    prefs = prefs,
-                    skillManager = skillManager,
-                    memoryManager = memoryManager,
-                    voiceManager = voiceManager,
-                    controlCenter = controlCenter,
-                    alarmSystem = alarmSystem,
-                    personalityEngine = personalityEngine,
-                    onToggleKhossa = { toggleKhossa() },
-                    onToggleVoice = { toggleVoice() },
-                    onToggleWakeWord = { toggleWakeWord() },
-                    onToggleAutomation = { toggleAutomation() },
-                    onToggleSafeMode = { toggleSafeMode() },
-                    onMicClick = { onMicClick() },
-                    onQuickAction = { action -> handleQuickAction(action) },
-                    onOpenApp = { packageName -> openApp(packageName) },
-                    onNavigateToSettings = { navigateToSettings() },
-                    onNavigateToSkills = { navigateToSkills() },
-                    onNavigateToMemory = { navigateToMemory() },
-                    onNavigateToAutomation = { navigateToAutomation() },
-                    onNavigateToApps = { navigateToApps() },
-                    onNavigateToVoice = { navigateToVoice() },
-                    onNavigateToAlarms = { navigateToAlarms() }
-                )
+            // Inicializar módulos
+            coroutineScope.launch(Dispatchers.IO) {
+                try {
+                    memoryManager.initialize(this@LauncherActivity)
+                    Log.d("KhossaLauncher", "MemoryManager initialized")
+                } catch (e: Exception) {
+                    Log.e("KhossaLauncher", "MemoryManager init failed", e)
+                }
+                try {
+                    controlCenter.initialize(this@LauncherActivity)
+                } catch (e: Exception) {
+                    Log.e("KhossaLauncher", "ControlCenter init failed", e)
+                }
+                try {
+                    alarmSystem.initialize(this@LauncherActivity)
+                } catch (e: Exception) {
+                    Log.e("KhossaLauncher", "AlarmSystem init failed", e)
+                }
             }
+
+            // Inicializar voz
+            try { 
+                voiceManager.init() 
+                voiceManager.onLevel = { level -> uiState = uiState.copy(voiceLevel = level) }
+            } catch (e: Exception) { 
+                Log.e("KhossaLauncher", "Voice init failed", e)
+            }
+
+            // Carregar estado inicial
+            loadInitialState()
+            
+            Log.d("KhossaLauncher", "Calling setContent")
+
+            setContent {
+                KhossaTheme {
+                    KhossaLauncherScreen(
+                        state = uiState,
+                        prefs = prefs,
+                        skillManager = skillManager,
+                        memoryManager = memoryManager,
+                        voiceManager = voiceManager,
+                        controlCenter = controlCenter,
+                        alarmSystem = alarmSystem,
+                        personalityEngine = personalityEngine,
+                        onToggleKhossa = { toggleKhossa() },
+                        onToggleVoice = { toggleVoice() },
+                        onToggleWakeWord = { toggleWakeWord() },
+                        onToggleAutomation = { toggleAutomation() },
+                        onToggleSafeMode = { toggleSafeMode() },
+                        onMicClick = { onMicClick() },
+                        onQuickAction = { action -> handleQuickAction(action) },
+                        onOpenApp = { packageName -> openApp(packageName) },
+                        onNavigateToSettings = { navigateToSettings() },
+                        onNavigateToSkills = { navigateToSkills() },
+                        onNavigateToMemory = { navigateToMemory() },
+                        onNavigateToAutomation = { navigateToAutomation() },
+                        onNavigateToApps = { navigateToApps() },
+                        onNavigateToVoice = { navigateToVoice() },
+                        onNavigateToAlarms = { navigateToAlarms() }
+                    )
+                }
+            }
+            
+            Log.d("KhossaLauncher", "setContent completed")
+            
+        } catch (e: Exception) {
+            Log.e("KhossaLauncher", "Fatal error in onCreate", e)
+            // Fallback: abrir MainActivity diretamente
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
         }
     }
 
     override fun onResume() {
         super.onResume()
-        updateStatus()
-        loadRecentApps()
-        loadSkills()
+        try {
+            updateStatus()
+            loadRecentApps()
+            loadSkills()
+        } catch (e: Exception) {
+            Log.e("KhossaLauncher", "Error in onResume", e)
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        voiceManager.shutdown()
+        try {
+            voiceManager.shutdown()
+        } catch (e: Exception) { }
     }
 
     private fun loadInitialState() {
@@ -127,28 +164,30 @@ class LauncherActivity : ComponentActivity() {
     }
 
     private fun updateStatus() {
-        uiState = uiState.copy(
-            accessibilityActive = AgentAccessibilityService.instance != null,
-            backgroundServiceActive = KhossaVoiceService.instanceRunning,
-            mood = personalityEngine.mood.value.name
-        )
+        try {
+            uiState = uiState.copy(
+                accessibilityActive = AgentAccessibilityService.instance != null,
+                backgroundServiceActive = KhossaVoiceService.instanceRunning,
+                mood = try { personalityEngine.mood.value.name } catch (e: Exception) { "PROFESSIONAL" }
+            )
 
-        // Atualizar controles do dispositivo
-        coroutineScope.launch {
-            try {
-                val state = controlCenter.controlsState.value
-                uiState = uiState.copy(
-                    controls = DeviceControlState(
-                        wifi = state.wifi == SmartControlCenter.ControlStatus.ON,
-                        bluetooth = state.bluetooth == SmartControlCenter.ControlStatus.ON,
-                        flashlight = state.flashlight == SmartControlCenter.ControlStatus.ON,
-                        location = state.location == SmartControlCenter.ControlStatus.ON,
-                        dnd = state.doNotDisturb == SmartControlCenter.ControlStatus.ON,
-                        powerSave = state.powerSave == SmartControlCenter.ControlStatus.ON
+            // Atualizar controles do dispositivo
+            coroutineScope.launch {
+                try {
+                    val state = controlCenter.controlsState.value
+                    uiState = uiState.copy(
+                        controls = DeviceControlState(
+                            wifi = state.wifi == SmartControlCenter.ControlStatus.ON,
+                            bluetooth = state.bluetooth == SmartControlCenter.ControlStatus.ON,
+                            flashlight = state.flashlight == SmartControlCenter.ControlStatus.ON,
+                            location = state.location == SmartControlCenter.ControlStatus.ON,
+                            dnd = state.doNotDisturb == SmartControlCenter.ControlStatus.ON,
+                            powerSave = state.powerSave == SmartControlCenter.ControlStatus.ON
+                        )
                     )
-                )
-            } catch (e: Exception) { }
-        }
+                } catch (e: Exception) { }
+            }
+        } catch (e: Exception) { }
     }
 
     private fun getGreeting(): String {
@@ -163,22 +202,7 @@ class LauncherActivity : ComponentActivity() {
     private fun loadRecentApps() {
         coroutineScope.launch(Dispatchers.IO) {
             try {
-                val recentApps = memoryManager.mostUsedApp()
-                val apps = mutableListOf<AppInfo>()
-                
-                recentApps?.let {
-                    try {
-                        val pm = packageManager
-                        val appInfo = pm.getApplicationInfo(it.packageName, 0)
-                        apps.add(AppInfo(
-                            name = pm.getApplicationLabel(appInfo).toString(),
-                            packageName = it.packageName,
-                            icon = pm.getApplicationIcon(appInfo)
-                        ))
-                    } catch (e: Exception) { }
-                }
-
-                // Também adicionar apps do packageManager
+                // Carregar apps instalados primeiro (não precisa de DB)
                 val intent = Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_LAUNCHER) }
                 val installedApps = packageManager.queryIntentActivities(intent, 0)
                     .mapNotNull { resolveInfo ->
@@ -196,9 +220,11 @@ class LauncherActivity : ComponentActivity() {
                     .take(8)
 
                 withContext(Dispatchers.Main) {
-                    uiState = uiState.copy(recentApps = (apps + installedApps).take(8))
+                    uiState = uiState.copy(recentApps = installedApps)
                 }
-            } catch (e: Exception) { }
+            } catch (e: Exception) {
+                Log.e("KhossaLauncher", "Error loading apps", e)
+            }
         }
     }
 
