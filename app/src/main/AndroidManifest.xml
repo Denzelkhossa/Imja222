@@ -33,9 +33,9 @@
         android:theme="@style/Theme.KhossaAgent"
         android:supportsRtl="true">
 
-        <!-- Ecrã principal (Compose): botão de falar, histórico, permissões -->
+        <!-- Ecrã principal (Launcher): interface estilo Manos IA -->
         <activity
-            android:name=".AssistantActivity"
+            android:name=".ui.launcher.LauncherActivity"
             android:exported="true"
             android:label="@string/app_name">
             <intent-filter>
@@ -43,6 +43,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Ecrã do assistente de voz (Compose): botão de falar, histórico -->
+        <activity
+            android:name=".AssistantActivity"
+            android:exported="true"
+            android:label="Khossa - Assistente" />
 
         <!-- Configurações avançadas: provedor/modelo/chaves, skills, log técnico -->
         <activity
