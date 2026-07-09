@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Necessária pelo KhossaVoiceService (escuta em segundo plano pela wake word) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <!-- Notificação persistente do foreground service e lembretes (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Lembretes com hora exata (create_reminder). Sem isto, cai para aproximado. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Necessária pela ferramenta nativa search_contacts / remember_contact -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+    <!-- (Acesso a notificações/media não é uma uses-permission: é concedido pelo
+         utilizador em Ajustes > Apps > Acesso a notificações, ver KhossaNotificationListenerService) -->
+
+    <!-- Visibilidade de pacotes (Android 11+) para "abrir app pelo nome" e
+         detetar apps sensíveis/financeiros — só apps com um ecrã principal
+         (launcher), sem precisar da permissão especial QUERY_ALL_PACKAGES. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@android:drawable/ic_menu_manage"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.KhossaAgent"
+        android:supportsRtl="true">
+
+        <!-- Ecrã principal (Launcher): interface estilo Manos IA -->
+        <activity
+            android:name=".ui.launcher.LauncherActivity"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Ecrã do assistente de voz (Compose): botão de falar, histórico -->
+        <activity
+            android:name=".AssistantActivity"
+            android:exported="true"
+            android:label="Khossa - Assistente" />
+
+        <!-- Configurações avançadas: provedor/modelo/chaves, skills, log técnico -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:label="@string/app_name" />
+
+        <service
+            android:name=".AgentAccessibilityService"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- Escuta contínua pela wake word "Olá, Khossa" em segundo plano -->
+        <service
+            android:name=".voice.KhossaVoiceService"
+            android:label="Khossa — escuta em segundo plano"
+            android:foregroundServiceType="microphone"
+            android:exported="false" />
+
+        <!-- Leitura de notificações + controlo de sessões de media ativas -->
+        <service
+            android:name=".KhossaNotificationListenerService"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- Dispara os lembretes agendados (create_reminder) -->
+        <receiver
+            android:name=".tools.ReminderReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".KhossaWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.khossastudio.agent.ACTION_TOGGLE_SERVICE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/khossa_widget_info" />
+        </receiver>
+
+    </application>
+</manifest>
