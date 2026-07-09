@@ -81,14 +81,6 @@ class LauncherActivity : ComponentActivity() {
                 }
             }
 
-            // Inicializar voz
-            try { 
-                voiceManager.init() 
-                voiceManager.onLevel = { level -> uiState = uiState.copy(voiceLevel = level) }
-            } catch (e: Exception) { 
-                Log.e("KhossaLauncher", "Voice init failed", e)
-            }
-
             // Carregar estado inicial
             loadInitialState()
             

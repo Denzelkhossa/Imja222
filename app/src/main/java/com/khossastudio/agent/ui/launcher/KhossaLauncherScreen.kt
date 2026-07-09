@@ -1,7 +1,6 @@
 package com.khossastudio.agent.ui.launcher
 
 import android.content.SharedPreferences
-import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -148,6 +147,15 @@ fun KhossaLauncherScreen(
     onNavigateToAlarms: () -> Unit
 ) {
     var currentTab by remember { mutableIntStateOf(0) }
+    
+    // Inicializar voice manager de forma segura
+    LaunchedEffect(Unit) {
+        try {
+            voiceManager.init()
+        } catch (e: Exception) {
+            // TTS pode não estar disponível em alguns dispositivos
+        }
+    }
     
     KhossaTheme {
         Scaffold(
@@ -491,39 +499,27 @@ private fun VoiceOrb(
     onClick: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "orb")
-    val active = listening || thinking
-    
-    val huePhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(if (active) 2000 else 8000, easing = LinearEasing)
-        ),
-        label = "hue"
-    )
     
     val breath by infiniteTransition.animateFloat(
-        initialValue = 0f,
+        initialValue = 0.8f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(if (active) 600 else 2000, easing = FastOutSlowInEasing),
+            animation = tween(2000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "breath"
     )
     
-    val energy = breath * 0.15f + if (listening) level * 0.5f else 0f
-    
     Box(
         modifier = Modifier
-            .size((160 + energy * 40).dp)
+            .size((160 * breath).dp)
             .clip(CircleShape)
             .background(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF6366F1).copy(alpha = 0.8f + energy),
-                        Color(0xFF8B5CF6).copy(alpha = 0.6f + energy),
-                        Color(0xFF06B6D4).copy(alpha = 0.4f + energy)
+                        Color(0xFF6366F1),
+                        Color(0xFF8B5CF6),
+                        Color(0xFF06B6D4)
                     )
                 )
             )
@@ -538,7 +534,7 @@ private fun VoiceOrb(
             )
         } else {
             Icon(
-                if (listening) Icons.Default.Mic else Icons.Default.MicOff,
+                imageVector = Icons.Filled.Mic,
                 contentDescription = "Microfone",
                 tint = Color.White,
                 modifier = Modifier.size(48.dp)
